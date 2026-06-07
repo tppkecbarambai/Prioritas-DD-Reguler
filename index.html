@@ -257,14 +257,23 @@ function loadCSV() {
           skipEmptyLines: true,
           complete: function(results) {
             if (results.data && results.data.length > 0) {
+              // Filter lebih longgar: trim spasi + convert ke string
               allData = results.data.filter(function(row) {
-                return String(row.Tahun).trim() === '2026';
+                var tahun = String(row.Tahun).trim();
+                return tahun === '2026' || tahun === '2026.0';
               });
+              
               if (allData.length > 0) {
                 initFilterPrioritas();
                 renderRekapKecamatan();
               } else {
-                document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Tidak ada data Tahun 2026 di Sheets</div>';
+                // Tampilkan data mentah biar tau isinya apa
+                var contohData = results.data.slice(0,3);
+                var pesan = '❌ Tidak ada baris dengan Tahun 2026.<br><br>';
+                pesan += '<b>Data yang kebaca dari Sheets:</b><br>';
+                pesan += '<code>Tahun: ' + contohData.map(function(r){return r.Tahun}).join(', ') + '</code><br>';
+                pesan += '<b>Solusi:</b> Pastikan kolom Tahun di Sheets isinya 2026 tanpa spasi';
+                document.getElementById("tabelBox").innerHTML = '<div class="error-msg">' + pesan + '</div>';
               }
             } else {
               document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Data kosong dari Sheets</div>';
@@ -272,13 +281,13 @@ function loadCSV() {
           }
         });
       } else {
-        document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Gagal load CSV. Status: ' + xhr.status + '<br>Pastikan link sudah dipublish</div>';
+        document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Gagal load CSV. Status: ' + xhr.status + '</div>';
       }
     }
   };
   xhr.send();
 }
-
+            
 function initFilterPrioritas() {
   var prioritasSet = {};
   for (var i = 0; i < allData.length; i++) {
