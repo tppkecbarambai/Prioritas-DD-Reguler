@@ -245,15 +245,17 @@ function openTab(evt, tabName) {
 }
 
 function loadCSV() {
-  Papa.parse(CSV_URL, {
+  Papa.parse(CSV_URL + '&cache=' +=new Date().getTime(), {
     download: true,
     header: true,
     skipEmptyLines: true,
     complete: function(results) {
+      console.log('Data Loaded:', result.data.length);// cek F12
       if (results.data && results.data.length > 0) {
         allData = results.data.filter(function(row) {
           return String(row.Tahun).trim() === '2026';
         });
+        console.log('Data 2026:', allData.length);
         initFilterPrioritas();
         renderRekapKecamatan();
       } else {
@@ -261,7 +263,8 @@ function loadCSV() {
       }
     },
     error: function(err) {
-      document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Gagal load CSV: ' + err + '</div>';
+      document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Gagal load; '+err + '<br>Cek link CSV & publish ulang</div>';
+      console.log('Error:', err);
     }
   });
 }
