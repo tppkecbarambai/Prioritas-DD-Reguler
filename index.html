@@ -245,28 +245,38 @@ function openTab(evt, tabName) {
 }
 
 function loadCSV() {
-  Papa.parse(CSV_URL + '&cache=' +=new Date().getTime(), {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: function(results) {
-      console.log('Data Loaded:', result.data.length);// cek F12
-      if (results.data && results.data.length > 0) {
-        allData = results.data.filter(function(row) {
-          return String(row.Tahun).trim() === '2026';
+  document.getElementById("tabelBox").innerHTML = '<div class="loading">⏳ Memuat data dari Google Sheets...</div>';
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', CSV_URL + '&t=' + new Date().getTime(), true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        Papa.parse(xhr.responseText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            if (results.data && results.data.length > 0) {
+              allData = results.data.filter(function(row) {
+                return String(row.Tahun).trim() === '2026';
+              });
+              if (allData.length > 0) {
+                initFilterPrioritas();
+                renderRekapKecamatan();
+              } else {
+                document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Tidak ada data Tahun 2026 di Sheets</div>';
+              }
+            } else {
+              document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Data kosong dari Sheets</div>';
+            }
+          }
         });
-        console.log('Data 2026:', allData.length);
-        initFilterPrioritas();
-        renderRekapKecamatan();
       } else {
-        document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Data kosong. Cek Google Sheets.</div>';
+        document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Gagal load CSV. Status: ' + xhr.status + '<br>Pastikan link sudah dipublish</div>';
       }
-    },
-    error: function(err) {
-      document.getElementById("tabelBox").innerHTML = '<div class="error-msg">❌ Gagal load; '+err + '<br>Cek link CSV & publish ulang</div>';
-      console.log('Error:', err);
     }
-  });
+  };
+  xhr.send();
 }
 
 function initFilterPrioritas() {
