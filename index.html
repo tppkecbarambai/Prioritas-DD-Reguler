@@ -330,7 +330,6 @@ function initFilterPrioritas() {
   }
   select.onchange = renderData;
 }
-
 function renderData() {
   var prioritas = document.getElementById("filterPrioritas").value;
   document.getElementById("btnExport").disabled =!prioritas;
@@ -348,39 +347,43 @@ function renderData() {
   document.getElementById("statCards").style.display = 'grid';
   document.getElementById("chartBox").style.display = 'block';
   document.getElementById("namaPrioritas").innerHTML = prioritas;
-// AUTO DETEKSI NAMA KOLOM
+
+  // AUTO DETEKSI NAMA KOLOM
   var kolomDesa = cariKolom(allData, 'desa');
   var kolomPrioritas = cariKolom(allData, 'prioritas');
   var kolomPagu = cariKolom(allData, 'pagu') || cariKolom(allData, 'anggaran');
   var kolomRealisasi = cariKolom(allData, 'realisasi');
 
   console.log('Kolom terdeteksi:', kolomDesa, kolomPrioritas, kolomPagu, kolomRealisasi);
+
   var dataPerDesa = {};
   var totalAnggaran = 0, totalRealisasi = 0;
 
-   for (var i = 0; i < allData.length; i++) {
+  for (var i = 0; i < allData.length; i++) {
     if (allData[i][kolomPrioritas] && allData[i][kolomPrioritas].trim() === prioritas) {
       var desa = allData[i][kolomDesa] || "Tidak Ada Nama";
       desa = String(desa).trim();
       if (desa === '') desa = "Tidak Ada Nama";
 
-      if (!dataPerDesa) dataPerDesa = { anggaran: 0, realisasi: 0 };
+      // FIX UTAMA DI SINI 👇
+      if (!dataPerDesa[desa]) dataPerDesa[desa] = { anggaran: 0, realisasi: 0 };
+
       var ang = kolomPagu? getAngkaValue(allData[i][kolomPagu]) : 0;
       var real = kolomRealisasi? getAngkaValue(allData[i][kolomRealisasi]) : 0;
-      dataPerDesa.anggaran += ang;
-      dataPerDesa.realisasi += real;
+      dataPerDesa[desa].anggaran += ang;
+      dataPerDesa[desa].realisasi += real;
       totalAnggaran += ang;
       totalRealisasi += real;
     }
   }
 
-   currentDataDesa = [];
+  currentDataDesa = [];
   for (var desa in dataPerDesa) {
-    var persen = parseFloat(hitungPersen(dataPerDesa.realisasi, dataPerDesa.anggaran));
+    var persen = parseFloat(hitungPersen(dataPerDesa[desa].realisasi, dataPerDesa[desa].anggaran));
     currentDataDesa.push({
       nama: desa,
-      anggaran: dataPerDesa.anggaran,
-      realisasi: dataPerDesa.realisasi,
+      anggaran: dataPerDesa[desa].anggaran,
+      realisasi: dataPerDesa[desa].realisasi,
       persen: persen
     });
   }
@@ -449,7 +452,6 @@ function renderData() {
   html += '</tbody></table>';
   document.getElementById("tabelBox").innerHTML = html;
 }
-
 function renderRekapKecamatan() {
   var rekapPrioritas = {};
   for (var i = 0; i < allData.length; i++) {
