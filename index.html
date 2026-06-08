@@ -243,7 +243,16 @@ function openTab(evt, tabName) {
   evt.currentTarget.className += " active";
   if (tabName === 'RekapKecamatan') renderRekapKecamatan();
 }
-
+function cariKolom(data, kataKunci) {
+  if (data.length == 0) return '';
+  var keys = Object.keys(data[0]);
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i].toLowerCase().trim();
+    if (key === kataKunci.toLowerCase()) return keys[i];
+    if (key.indexOf(kataKunci.toLowerCase())!== -1) return keys[i];
+  }
+  return '';
+}
 function loadCSV() {
   document.getElementById("tabelBox").innerHTML = '<div class="loading">⏳ Memuat data...</div>';
 
@@ -339,16 +348,25 @@ function renderData() {
   document.getElementById("statCards").style.display = 'grid';
   document.getElementById("chartBox").style.display = 'block';
   document.getElementById("namaPrioritas").innerHTML = prioritas;
+// AUTO DETEKSI NAMA KOLOM
+  var kolomDesa = cariKolom(allData, 'desa');
+  var kolomPrioritas = cariKolom(allData, 'prioritas');
+  var kolomPagu = cariKolom(allData, 'pagu') || cariKolom(allData, 'anggaran');
+  var kolomRealisasi = cariKolom(allData, 'realisasi');
 
+  console.log('Kolom terdeteksi:', kolomDesa, kolomPrioritas, kolomPagu, kolomRealisasi);
   var dataPerDesa = {};
   var totalAnggaran = 0, totalRealisasi = 0;
 
-  for (var i = 0; i < allData.length; i++) {
-    if (allData[i].Prioritas === prioritas) {
-      var desa = allData[i].Desa || "Tidak Ada";
+   for (var i = 0; i < allData.length; i++) {
+    if (allData[i][kolomPrioritas] && allData[i][kolomPrioritas].trim() === prioritas) {
+      var desa = allData[i][kolomDesa] || "Tidak Ada Nama";
+      desa = String(desa).trim();
+      if (desa === '') desa = "Tidak Ada Nama";
+
       if (!dataPerDesa) dataPerDesa = { anggaran: 0, realisasi: 0 };
-      var ang = getAngkaValue(allData[i].Pagu);
-      var real = getAngkaValue(allData[i].Realisasi);
+      var ang = kolomPagu? getAngkaValue(allData[i][kolomPagu]) : 0;
+      var real = kolomRealisasi? getAngkaValue(allData[i][kolomRealisasi]) : 0;
       dataPerDesa.anggaran += ang;
       dataPerDesa.realisasi += real;
       totalAnggaran += ang;
@@ -356,7 +374,7 @@ function renderData() {
     }
   }
 
-  currentDataDesa = [];
+   currentDataDesa = [];
   for (var desa in dataPerDesa) {
     var persen = parseFloat(hitungPersen(dataPerDesa.realisasi, dataPerDesa.anggaran));
     currentDataDesa.push({
@@ -372,6 +390,7 @@ function renderData() {
   document.getElementById("totalRealisasi").innerHTML = formatAngka(totalRealisasi);
   document.getElementById("persenSerapan").innerHTML = hitungPersen(totalRealisasi, totalAnggaran) + '%';
 
+  // Chart
   var ctx = document.getElementById("chartDesa").getContext("2d");
   var labels = [], dataAnggaran = [], dataRealisasi = [];
   for (var i = 0; i < currentDataDesa.length; i++) {
@@ -406,6 +425,7 @@ function renderData() {
     }
   });
 
+  // Tabel
   var html = '<table><thead><tr><th>Rank</th><th>Desa</th><th>Anggaran</th><th>Realisasi</th><th>% Realisasi</th></tr></thead><tbody>';
   for (var i = 0; i < currentDataDesa.length; i++) {
     var rank = i + 1;
@@ -420,7 +440,7 @@ function renderData() {
 
     html += '<tr>';
     html += '<td class="rank ' + rankClass + '">' + rankIcon + '</td>';
-    html += '<td>' + currentDataDesa[i].nama + '</td>';
+    html += '<td><b>' + currentDataDesa[i].nama + '</b></td>';
     html += '<td class="angka">' + formatAngka(currentDataDesa[i].anggaran) + '</td>';
     html += '<td class="angka">' + formatAngka(currentDataDesa[i].realisasi) + '</td>';
     html += '<td class="persen">' + currentDataDesa[i].persen.toFixed(1) + '%</td>';
